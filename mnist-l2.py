@@ -128,7 +128,7 @@ def main():
             param.requires_grad = False
 
         # create l2 norm penalty for the next task
-        penalty = l2_penalty(model_copy, coeff = L2_COEFF)
+        penalty = L2Penalty(model_copy, coeff = L2_COEFF)
 
     print( '\nAverage Per-task Performance over number of tasks' )
     for i, p in enumerate(AUROCs):

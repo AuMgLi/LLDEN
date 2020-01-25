@@ -1,5 +1,6 @@
 import torch.nn as nn
 
+
 class AlexNet(nn.Module):
 
     def __init__(self, num_classes=100):
@@ -19,9 +20,9 @@ class AlexNet(nn.Module):
             nn.ReLU(inplace=True)
         )
         self.classifier = nn.Sequential(
-            nn.Linear(4*128, 384),
+            nn.Linear(4 * 128, 384),
             nn.Linear(384, 192),
-            nn.Linear(192,num_classes),
+            nn.Linear(192, num_classes),
             nn.Sigmoid()
         )
 

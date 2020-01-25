@@ -8,8 +8,8 @@ __all__ = ['load_MNIST', 'load_CIFAR']
 
 DATA = './data'
 
-def load_MNIST(batch_size = 256, num_workers = 4):
 
+def load_MNIST(batch_size=256, num_workers=4):
     dataloader = datasets.MNIST
 
     transform_all = transforms.Compose([
@@ -35,8 +35,8 @@ def load_MNIST(batch_size = 256, num_workers = 4):
 
     return (trainloader, validloader, testloader)
 
-def load_CIFAR(batch_size = 256, num_workers = 4):
 
+def load_CIFAR(batch_size=256, num_workers=4):
     dataloader = datasets.CIFAR10
 
     transform_train = transforms.Compose([

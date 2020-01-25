@@ -9,7 +9,7 @@ from progress.bar import Bar
 
 from .misc import AverageMeter
 
-__all__ = ['train', 'save_checkpoint', 'l1_penalty', 'l2_penalty']
+__all__ = ['train', 'save_checkpoint', 'L1Penalty', 'L2Penalty']
 
 # Manual seed
 SEED = 20
@@ -17,6 +17,7 @@ SEED = 20
 random.seed(SEED)
 torch.manual_seed(SEED)
 torch.cuda.manual_seed_all(SEED)
+
 
 def one_hot(targets, classes):
     targets = targets.type(torch.LongTensor).view(-1)
@@ -26,8 +27,9 @@ def one_hot(targets, classes):
             targets_onehot[i][classes.index(t)] = 1
     return targets_onehot
 
-def train(batchloader, model, criterion, all_classes, classes, optimizer = None, penalty = None, test = False, use_cuda = False):
-    
+
+def train(batchloader, model, criterion, all_classes, classes, optimizer=None, penalty=None, test=False,
+          use_cuda=False):
     # switch to train or evaluate mode
     if test:
         model.eval()
@@ -68,7 +70,7 @@ def train(batchloader, model, criterion, all_classes, classes, optimizer = None,
         for i, cls in enumerate(classes):
             loss = loss + criterion(outputs[:, all_classes.index(cls)], targets_onehot[:, i])
         if penalty is not None:
-        	loss = loss + penalty(model)
+            loss = loss + penalty(model)
 
         # record loss
         losses.update(loss.data[0], inputs.size(0))
@@ -84,27 +86,29 @@ def train(batchloader, model, criterion, all_classes, classes, optimizer = None,
         end = time.time()
 
         # plot progress
-        bar.suffix  = '({batch}/{size}) Data: {data:.3f}s | Batch: {bt:.3f}s | Total: {total:} | Loss: {loss:.4f}'.format(
-                    batch=batch_idx + 1,
-                    size=len(batchloader),
-                    data=data_time.avg,
-                    bt=batch_time.avg,
-                    total=bar.elapsed_td,
-                    loss=losses.avg)
+        bar.suffix = '({batch}/{size}) Data: {data:.3f}s | Batch: {bt:.3f}s | Total: {total:} | Loss: {loss:.4f}'.format(
+            batch=batch_idx + 1,
+            size=len(batchloader),
+            data=data_time.avg,
+            bt=batch_time.avg,
+            total=bar.elapsed_td,
+            loss=losses.avg)
         bar.next()
 
     bar.finish()
     return losses.avg
 
-def save_checkpoint(state, path, is_best = False):
+
+def save_checkpoint(state, path, is_best=False):
     filepath = os.path.join(path, "last.pt")
     torch.save(state, filepath)
     if is_best:
         filepath_best = os.path.join(path, "best.pt")
         shutil.copyfile(filepath, filepath_best)
 
-class l2_penalty(object):
-    def __init__(self, model, coeff = 5e-2):
+
+class L2Penalty(object):
+    def __init__(self, model, coeff=5e-2):
         self.old_model = model
         self.coeff = coeff
 
@@ -121,8 +125,9 @@ class l2_penalty(object):
 
         return self.coeff * penalty
 
-class l1_penalty(object):
-    def __init__(self, coeff = 5e-2):
+
+class L1Penalty(object):
+    def __init__(self, coeff=5e-2):
         self.coeff = coeff
 
     def __call__(self, model):
