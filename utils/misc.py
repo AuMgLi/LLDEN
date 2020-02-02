@@ -19,10 +19,12 @@ def mkdir_p(path):
         else:
             raise
 
+
 class AverageMeter(object):
     """Computes and stores the average and current value
        Imported from https://github.com/pytorch/examples/blob/master/imagenet/main.py#L247-L262
     """
+
     def __init__(self):
         self.reset()
 
@@ -38,9 +40,10 @@ class AverageMeter(object):
         self.count += n
         self.avg = self.sum / self.count
 
+
 class ClassSampler(Sampler):
 
-    def __init__(self, labels, classes, start_from = 0, amount = None):
+    def __init__(self, labels, classes, start_from=0, amount=None):
         self.indices = []
         start = [start_from] * len(classes)
         left = [amount] * len(classes)
@@ -55,15 +58,16 @@ class ClassSampler(Sampler):
                     elif left[idx] > 0:
                         self.indices.append(i)
                         left[idx] -= 1
-                else: 
+                else:
                     start[idx] -= 1
 
     def __iter__(self):
-        #return (i for i in range(self.prefix))
+        # return (i for i in range(self.prefix))
         return (self.indices[i] for i in torch.randperm(len(self.indices)))
 
     def __len__(self):
         return len(self.indices)
+
 
 class GaussianNoise(object):
 

@@ -1,5 +1,6 @@
 import torch.nn as nn
 
+
 class LeNet(nn.Module):
 
     def __init__(self, num_classes=10):
@@ -13,9 +14,9 @@ class LeNet(nn.Module):
             nn.MaxPool2d(kernel_size=2, stride=2)
         )
         self.classifier = nn.Sequential(
-            nn.Linear(16*5*5, 120),
+            nn.Linear(16 * 5 * 5, 120),
             nn.Linear(120, 84),
-            nn.Linear(84,num_classes),
+            nn.Linear(84, num_classes),
             nn.Sigmoid()
         )
 

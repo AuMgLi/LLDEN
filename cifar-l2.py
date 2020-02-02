@@ -13,24 +13,24 @@ from models import LeNet
 from utils import *
 
 # PATHS
-CHECKPOINT    = "./checkpoints/cifar-l2"
+CHECKPOINT = "./checkpoints/cifar-l2"
 
 # BATCH
-BATCH_SIZE    = 256
-NUM_WORKERS   = 4
+BATCH_SIZE = 256
+NUM_WORKERS = 4
 
 # SGD
 LEARNING_RATE = 0.01
-MOMENTUM      = 0.9
-WEIGHT_DECAY  = 1e-4
+MOMENTUM = 0.9
+WEIGHT_DECAY = 1e-4
 
 # Step Decay
-LR_DROP       = 0.5
-EPOCHS_DROP   = 20
+LR_DROP = 0.5
+EPOCHS_DROP = 20
 
 # MISC
-EPOCHS        = 100
-CUDA          = True
+EPOCHS = 100
+CUDA = True
 
 # L2 REGULARIZATION
 L2_COEFF = 5e-2
@@ -45,14 +45,14 @@ if CUDA:
 
 ALL_CLASSES = range(10)
 
-def main():
 
+def main():
     if not os.path.isdir(CHECKPOINT):
         os.makedirs(CHECKPOINT)
 
     print('==> Preparing dataset')
 
-    trainloader, testloader = load_CIFAR(batch_size = BATCH_SIZE, num_workers = NUM_WORKERS)
+    trainloader, testloader = load_CIFAR(batch_size=BATCH_SIZE, num_workers=NUM_WORKERS)
 
     print("==> Creating model")
     model = LeNet(num_classes=len(ALL_CLASSES))
@@ -62,7 +62,7 @@ def main():
         model = nn.DataParallel(model)
         cudnn.benchmark = True
 
-    print('    Total params: %.2fK' % (sum(p.numel() for p in model.parameters()) / 1000) )
+    print('    Total params: %.2fK' % (sum(p.numel() for p in model.parameters()) / 1000))
 
     criterion = nn.BCELoss()
     penalty = None
@@ -72,11 +72,11 @@ def main():
 
     for t, cls in enumerate(ALL_CLASSES):
 
-        optimizer = optim.SGD(model.parameters(), 
-                lr=LEARNING_RATE, 
-                momentum=MOMENTUM, 
-                weight_decay=WEIGHT_DECAY
-            )
+        optimizer = optim.SGD(model.parameters(),
+                              lr=LEARNING_RATE,
+                              momentum=MOMENTUM,
+                              weight_decay=WEIGHT_DECAY
+                              )
 
         print('\nTask: [%d | %d]\n' % (t + 1, len(ALL_CLASSES)))
 
@@ -97,8 +97,10 @@ def main():
 
             print('Epoch: [%d | %d]' % (epoch + 1, EPOCHS))
 
-            train_loss = train(trainloader, model, criterion, ALL_CLASSES, [cls], optimizer = optimizer, penalty = penalty, use_cuda = CUDA)
-            test_loss = train(testloader, model, criterion, ALL_CLASSES, [cls], test = True, penalty = penalty, use_cuda = CUDA)
+            train_loss = train(trainloader, model, criterion, ALL_CLASSES, [cls], optimizer=optimizer, penalty=penalty,
+                               use_cuda=CUDA)
+            test_loss = train(testloader, model, criterion, ALL_CLASSES, [cls], test=True, penalty=penalty,
+                              use_cuda=CUDA)
 
             # save model
             is_best = test_loss < best_loss
@@ -108,7 +110,7 @@ def main():
                 'state_dict': model.state_dict(),
                 'loss': test_loss,
                 'optimizer': optimizer.state_dict()
-                }, CHECKPOINT, is_best)
+            }, CHECKPOINT, is_best)
 
         print("==> Calculating AUROC")
 
@@ -118,7 +120,7 @@ def main():
 
         auroc = calc_avg_AUROC(model, testloader, ALL_CLASSES, CLASSES, CUDA)
 
-        print( 'AUROC: {}'.format(auroc) )
+        print('AUROC: {}'.format(auroc))
 
         AUROCs.append(auroc)
 
@@ -128,11 +130,12 @@ def main():
             param.requires_grad = False
 
         # create l2 norm penalty for the next task
-        penalty = L2Penalty(model_copy, coeff = L2_COEFF)
+        penalty = L2Penalty(model_copy, coeff=L2_COEFF)
 
-    print( '\nAverage Per-task Performance over number of tasks' )
+    print('\nAverage Per-task Performance over number of tasks')
     for i, p in enumerate(AUROCs):
-        print("%d: %f" % (i+1,p))
+        print("%d: %f" % (i + 1, p))
+
 
 if __name__ == '__main__':
     main()

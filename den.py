@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import os
 import random
 import copy
@@ -64,15 +62,15 @@ def main():
 
     if CUDA:
         model = model.cuda()
-        model = nn.DataParallel(model)
+        # model = nn.DataParallel(model)
         cudnn.benchmark = True
 
     # initialize parameters
-    for name, param in model.named_parameters():
-        if 'bias' in name:
-            param.data.zero_()
-        elif 'weight' in name:
-            param.data.normal_(0, 0.005)
+    # for name, param in model.named_parameters():
+    #     if 'bias' in name:
+    #         param.data.zero_()
+    #     elif 'weight' in name:
+    #         param.data.normal_(0, 0.005)
 
     print('    Total params: %.2fK' % (sum(p.numel() for p in model.parameters()) / 1000))
 
@@ -102,7 +100,6 @@ def main():
             learning_rate = LEARNING_RATE
             # epochs = 10
             for epoch in range(MAX_EPOCHS):
-
                 # decay learning rate
                 if (epoch + 1) % EPOCHS_DROP == 0:
                     learning_rate *= LR_DROP
@@ -209,7 +206,6 @@ def main():
             split_neurons(model_copy, model)
 
         print("==> Calculating AUROC")
-
         filepath_best = os.path.join(CHECKPOINT, "best.pt")
         checkpoint = torch.load(filepath_best)
         model.load_state_dict(checkpoint['state_dict'])
@@ -284,7 +280,71 @@ def select_neurons(model, task):
     return hooks
 
 
+def dynamic_expansion(model, ex_k=6):
+    """
+    dynamic network expansion for CNN (AlexNet)
+    :param model:
+    :param ex_k: number of neurons added by default in each layer
+    :return:
+    """
+    layers_name = list(model.named_parameters())
+    layer_cnt = len(layers_name)
+    cnt = 0
+    # last_name = None
+    for name, param in model.named_parameters():
+        cnt += 1
+        if cnt >= layer_cnt - 1:
+            break  # exclude the output layer (weight & bias)
+
+        if 'features' in name:  # conv layer
+            if 'weight' in name:
+                param_shape = param.shape
+                param.data = torch.cat(
+                    (param.data,
+                     torch.randn(ex_k, param_shape[1], param_shape[2], param_shape[3]).normal_(0, 0.005)),
+                    dim=0,
+                )
+                if cnt > 1:
+                    param.data = torch.cat(
+                        (param.data,
+                         torch.randn(param_shape[0]+ex_k, ex_k, param_shape[2], param_shape[3]).normal_(0, 0.005)),
+                        dim=1,
+                    )
+            elif 'bias' in name:
+                param.data = torch.cat(
+                    (param.data, torch.zeros(ex_k)),
+                    dim=0,
+                )
+        elif 'classifier' in name:  # fc layer
+            if 'weight' in name:
+                param_shape = param.shape
+                param.data = torch.cat(
+                    (param.data,
+                     torch.randn(ex_k, param_shape[1]).normal_(0, 0.005)),
+                    dim=0,
+                )
+                param.data = torch.cat(
+                    (param.data,
+                     torch.randn(param_shape[0]+ex_k, ex_k*6*6).normal_(0, 0.005)),  # for AlexNet
+                    dim=1,
+                )
+            elif 'bias' in name:
+                param.data = torch.cat(
+                    (param.data, torch.zeros(ex_k)),
+                    dim=0,
+                )
+                break  # only expand one fc layer
+        else:
+            print('Unknown layer:', name)
+
+
 def split_neurons(old_model, new_model):
+    """
+    ???
+    :param old_model:
+    :param new_model:
+    :return:
+    """
     old_layers = []
     for name, param in old_model.named_parameters():
         if 'bias' not in name:
@@ -297,11 +357,9 @@ def split_neurons(old_model, new_model):
 
     suma = 0
     for old_layer, new_layer in zip(old_layers, new_layers):
-
         for data1, data2 in zip(old_layer.data, new_layer.data):
             diff = data1 - data2
             drift = diff.norm(2)
-
             if drift > 0.02:
                 suma += 1
 
